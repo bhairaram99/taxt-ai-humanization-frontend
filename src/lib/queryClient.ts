@@ -1,8 +1,18 @@
 /// <reference types="vite/client" />
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// -----------------------------------------------------------------------------
+// CONFIG
+// -----------------------------------------------------------------------------
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// Normalize URL so it ALWAYS starts with EXACTLY ONE slash
+function normalizeUrl(url: string) {
+  return "/" + url.replace(/^\/+/, "");
+}
+
+// Throw readable errors
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -10,18 +20,25 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// API REQUEST (POST, DELETE, PUT, PATCH, etc.)
+// -----------------------------------------------------------------------------
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown,
   customHeaders: Record<string, string> = {}
 ): Promise<Response> {
-  const fullUrl = url.startsWith("http")
-    ? url
-    : `${API_BASE_URL}${url}`;
+  
+  const normalized = normalizeUrl(url);
+
+  const fullUrl = normalized.startsWith("http")
+    ? normalized
+    : `${API_BASE_URL}${normalized}`;
 
   const headers: Record<string, string> = {
-    "Accept": "application/json",
+    Accept: "application/json",
     ...customHeaders,
   };
 
@@ -31,7 +48,6 @@ export async function apiRequest(
     credentials: "include",
   };
 
-  // Only attach JSON content-type + body when needed
   if (data !== undefined && method !== "GET") {
     headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(data);
@@ -42,15 +58,25 @@ export async function apiRequest(
   return res;
 }
 
+// -----------------------------------------------------------------------------
+// QUERY FUNCTION (GET requests for React Query)
+// -----------------------------------------------------------------------------
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const url = queryKey.join("/") as string;
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    
+    const raw = queryKey.join("/");
+    const normalized = normalizeUrl(raw);
+
+    const fullUrl = normalized.startsWith("http")
+      ? normalized
+      : `${API_BASE_URL}${normalized}`;
+
     const res = await fetch(fullUrl, {
       credentials: "include",
     });
@@ -62,6 +88,10 @@ export const getQueryFn: <T>(options: {
     await throwIfResNotOk(res);
     return await res.json();
   };
+
+// -----------------------------------------------------------------------------
+// QUERY CLIENT SETUP
+// -----------------------------------------------------------------------------
 
 export const queryClient = new QueryClient({
   defaultOptions: {
