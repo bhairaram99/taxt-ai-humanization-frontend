@@ -7,11 +7,14 @@ import { DiffViewer } from "@/components/diff-viewer";
 import { HistoryPanel } from "@/components/history-panel";
 import { ModeSelector } from "@/components/mode-selector";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Sparkles, History, Shield, Lock, CheckCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Navbar } from "@/components/Navbar";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { GuestModal } from "@/components/auth/GuestModal";
+import { PlansSection } from "@/components/plans/PlansSection";
+import { Sparkles, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   const { toast } = useToast();
@@ -22,6 +25,8 @@ export default function Home() {
   const [verbosity, setVerbosity] = useState<"concise" | "balanced" | "detailed">("balanced");
   const [mode, setMode] = useState<TransformationMode>("paraphrase");
   const [showHistory, setShowHistory] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'signup'>('login');
 
   // Always use deep humanization mode
   const deepHumanization = true;
@@ -125,68 +130,45 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [originalText, transformMutation.isPending]);
 
+  const handleLoginClick = () => {
+    setAuthModalTab('login');
+    setAuthModalOpen(true);
+  };
+
+  const handleSignupClick = () => {
+    setAuthModalTab('signup');
+    setAuthModalOpen(true);
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Navbar */}
+      <Navbar onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
+
+      {/* Guest Detection Modal */}
+      <GuestModal onLoginClick={handleLoginClick} onSignupClick={handleSignupClick} />
+
+      {/* Auth Modal */}
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultTab={authModalTab} />
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* Header */}
-        <header className="sticky top-0 z-10 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="h-full px-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-y-auto">
+          {/* Hero Section */}
+          <div className="bg-gradient-to-b from-background to-muted/20 border-b border-border py-12 px-6">
+            <div className="max-w-6xl mx-auto text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+                <Sparkles className="w-4 h-4" />
+                Powered by Advanced AI
               </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 AI Text Humanizer
               </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowHistory(!showHistory)}
-                data-testid="button-toggle-history"
-              >
-                <History className="h-5 w-5" />
-              </Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
-
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-b border-border">
-          <div className="max-w-7xl mx-auto px-6 py-12">
-            <div className="text-center max-w-4xl mx-auto space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Humanize AI Text & Bypass AI Detectors
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Transform AI-generated content into fully humanized, undetectable writing that passes all major AI detection tools
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Transform AI-generated content into natural, human-like text that bypasses all AI detectors
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Trust Badges */}
-        <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 dark:from-purple-950/10 dark:to-blue-950/10 py-4 border-b border-border">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="flex flex-wrap justify-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/80 rounded-full border border-border">
-                <Shield className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">100% Undetectable</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/80 rounded-full border border-border">
-                <Lock className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Secure & Private</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-background/80 rounded-full border border-border">
-                <CheckCircle className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium">Meaning Preserved</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Settings & Input Form - NOW VISIBLE FIRST */}
         <div className="border-b border-border bg-card p-6 space-y-6">
@@ -217,23 +199,36 @@ export default function Home() {
             <ModeSelector selectedMode={mode} onModeChange={setMode} />
 
             <div className="flex flex-col items-center gap-3">
-              <Button
-                onClick={handleTransform}
-                disabled={transformMutation.isPending || !originalText.trim()}
-                className="px-12 py-6 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                data-testid="button-transform"
-              >
-                {transformMutation.isPending ? (
-                  <>
-                    <span className="animate-pulse">Humanizing Your Text...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Humanize Text
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleTransform}
+                  disabled={transformMutation.isPending || !originalText.trim()}
+                  className="px-12 py-6 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  data-testid="button-transform"
+                >
+                  {transformMutation.isPending ? (
+                    <>
+                      <span className="animate-pulse">Humanizing Your Text...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Humanize Text
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="px-6 py-6"
+                  data-testid="button-toggle-history"
+                >
+                  <History className="h-5 w-5 mr-2" />
+                  {showHistory ? 'Hide History' : 'View History'}
+                </Button>
+              </div>
               
               {transformMutation.isPending && (
                 <div className="w-80">
@@ -279,6 +274,9 @@ export default function Home() {
             <DiffViewer original={originalText} humanized={humanizedText} />
           </div>
         </div>
+
+        {/* Plans Section */}
+        <PlansSection />
       </div>
 
       {/* History Sidebar */}
@@ -290,6 +288,7 @@ export default function Home() {
           onClose={() => setShowHistory(false)}
         />
       )}
+    </div>
     </div>
   );
 }

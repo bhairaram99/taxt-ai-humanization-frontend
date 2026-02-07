@@ -20,6 +20,11 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get auth token from localStorage
+function getAuthToken(): string | null {
+  return localStorage.getItem('authToken');
+}
+
 // -----------------------------------------------------------------------------
 // API REQUEST (POST, DELETE, PUT, PATCH, etc.)
 // -----------------------------------------------------------------------------
@@ -41,6 +46,12 @@ export async function apiRequest(
     Accept: "application/json",
     ...customHeaders,
   };
+
+  // Add auth token if available
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const options: RequestInit = {
     method,
@@ -77,8 +88,17 @@ export const getQueryFn: <T>(options: {
       ? normalized
       : `${API_BASE_URL}${normalized}`;
 
+    const headers: Record<string, string> = {};
+    
+    // Add auth token if available
+    const token = getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(fullUrl, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
